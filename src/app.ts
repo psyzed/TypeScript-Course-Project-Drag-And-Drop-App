@@ -57,6 +57,42 @@ function BindThis(_1: any, _2: any, descriptor: PropertyDescriptor) {
   return configuredDescriptor;
 }
 
+//PROJECT LIST CLASS
+
+class ProjectList {
+  templateElement: HTMLTemplateElement;
+  hostElement: HTMLDivElement;
+  listElement: HTMLElement;
+
+  constructor(private type: "active" | "finished") {
+    this.templateElement = document.getElementById(
+      "project-list"
+    )! as HTMLTemplateElement;
+    this.hostElement = document.getElementById("app")! as HTMLDivElement;
+
+    const importedNode = document.importNode(
+      this.templateElement.content,
+      true
+    );
+    this.listElement = importedNode.firstElementChild as HTMLElement;
+    this.listElement.id = `${this.type}-projects`;
+
+    this.attach();
+    this.renderContent();
+  }
+
+  private renderContent() {
+    const listId = `${this.type}-projects-list`;
+    this.listElement.querySelector("ul")!.id = listId;
+    this.listElement.querySelector("h2")!.textContent =
+      this.type.toUpperCase() + " PROJECTS";
+  }
+
+  private attach() {
+    this.hostElement.insertAdjacentElement("beforeend", this.listElement); //This method enables us to insert a html element, the first argument tells defines where the content will be insertet, (after the opening tag)
+  }
+}
+
 //PROJECT INPUT CLASS
 
 class ProjectInput {
@@ -157,3 +193,5 @@ class ProjectInput {
 }
 
 const prjInput = new ProjectInput();
+const activePrjList = new ProjectList("active");
+const finishedPrjList = new ProjectList("finished");
