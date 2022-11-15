@@ -2,6 +2,10 @@ class ProjectInput {
   templateElement: HTMLTemplateElement;
   hostElement: HTMLDivElement;
   formElement: HTMLFormElement;
+  titleInputElement: HTMLInputElement;
+  descriptionInputElement: HTMLInputElement;
+  peopleInputElement: HTMLInputElement;
+
   constructor() {
     this.templateElement = document.getElementById(
       "project-input"
@@ -14,8 +18,28 @@ class ProjectInput {
       true //the second argument of import node tells if we want to render all the levels of nesting "Deep Clone"
     );
     this.formElement = importedNode.firstElementChild as HTMLFormElement;
-    this.formElement.id = 'user-input'; //adding id to the element for styiling
+    this.formElement.id = "user-input"; //adding id to the element for styiling
+    this.titleInputElement = this.formElement.querySelector(
+      "#title"
+    ) as HTMLInputElement;
+    this.descriptionInputElement = this.formElement.querySelector(
+      "#description"
+    ) as HTMLInputElement;
+    this.peopleInputElement = this.formElement.querySelector(
+      "#people"
+    ) as HTMLInputElement;
+
+    this.configure();
     this.attach();
+  }
+
+  private submitHandler(event: Event) {
+    event.preventDefault(); //preventing http request.
+    console.log(this.titleInputElement.value);
+  }
+
+  private configure() {
+    this.formElement.addEventListener("submit", this.submitHandler.bind(this)); //we use the bind method to bind the this keyword to the class inside the submithandler method
   }
 
   private attach() {
@@ -23,5 +47,4 @@ class ProjectInput {
   }
 }
 
-
-const prjInput = new ProjectInput()
+const prjInput = new ProjectInput();
