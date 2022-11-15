@@ -1,3 +1,47 @@
+//VALIDATION
+
+interface ValitableObject {
+  value: string | number;
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  minNumber?: number;
+  maxNumber?: number;
+}
+
+function validate(ValitableInput: ValitableObject) {
+  let isValid = true;
+
+  if (ValitableInput.required) {
+    isValid = isValid && ValitableInput.value.toString().trim().length !== 0;
+  }
+  if (
+    ValitableInput.minLength != null &&
+    typeof ValitableInput.value === "string"
+  ) {
+    isValid = isValid && ValitableInput.value.length > ValitableInput.minLength;
+  }
+  if (
+    ValitableInput.maxLength != null &&
+    typeof ValitableInput.value === "string"
+  ) {
+    isValid = isValid && ValitableInput.value.length < ValitableInput.maxLength;
+  }
+  if (
+    ValitableInput.minNumber != null &&
+    typeof ValitableInput.value === "number"
+  ) {
+    isValid = isValid && ValitableInput.value > ValitableInput.minNumber;
+  }
+  if (
+    ValitableInput.maxNumber != null &&
+    typeof ValitableInput.value === "number"
+  ) {
+    isValid = isValid && ValitableInput.value < ValitableInput.maxNumber;
+  }
+  return isValid;
+}
+
 //THIS KEYWORD BIND DECORATOR
 
 function BindThis(_1: any, _2: any, descriptor: PropertyDescriptor) {
@@ -55,10 +99,28 @@ class ProjectInput {
     const enteredDescription = this.descriptionInputElement.value;
     const enteredPeople = this.peopleInputElement.value;
 
+    const titleValidatble: ValitableObject = {
+      value: enteredTitle,
+      required: true,
+      minLength: 3,
+    };
+    const descriptionValidatble: ValitableObject = {
+      value: enteredDescription,
+      required: true,
+      minLength: 5,
+      maxLength: 20,
+    };
+    const peopleValidatble: ValitableObject = {
+      value: +enteredPeople,
+      required: true,
+      minNumber: 1,
+      maxNumber: 5,
+    };
+
     if (
-      enteredTitle.trim().length === 0 ||
-      enteredDescription.trim().length === 0 ||
-      enteredPeople.trim().length === 0
+      !validate(titleValidatble) ||
+      !validate(descriptionValidatble) ||
+      !validate(peopleValidatble)
     ) {
       alert("Invalid Input!");
       return;
