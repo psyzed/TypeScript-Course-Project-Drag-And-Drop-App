@@ -1,3 +1,20 @@
+//THIS KEYWORD BIND DECORATOR
+
+function BindThis(_1: any, _2: any, descriptor: PropertyDescriptor) {
+  const originalMethod = descriptor.value;
+  const configuredDescriptor: PropertyDescriptor = {
+    configurable: true,
+    enumerable: false,
+    get() {
+      const boundThisFunction = originalMethod.bind(this);
+      return boundThisFunction;
+    },
+  };
+  return configuredDescriptor;
+}
+
+//PROJECT INPUT CLASS
+
 class ProjectInput {
   templateElement: HTMLTemplateElement;
   hostElement: HTMLDivElement;
@@ -33,6 +50,7 @@ class ProjectInput {
     this.attach();
   }
 
+  @BindThis
   private submitHandler(event: Event) {
     event.preventDefault(); //preventing http request.
     console.log(this.titleInputElement.value);
