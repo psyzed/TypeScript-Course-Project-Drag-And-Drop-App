@@ -1,3 +1,42 @@
+//PROJECT STATE MANAGMENT
+
+class ProjectState {
+  //this will be a singleton class so we can make only one instance of it and use it in the whole app, it well manage the apps state and store the apps data
+  private listeners: any[] = [];
+  private projects: any[] = [];
+  private static instance: ProjectState;
+
+  private constructor() {}
+
+  static getInstance() {
+    //this is a static method, when used it does not create a new instance of the class
+    if (this.instance) {
+      return this.instance;
+    }
+    this.instance = new ProjectState();
+    return this.instance;
+  }
+
+  addListener(listenerFn: Function) {
+    this.listeners.push(listenerFn);
+  }
+
+  addProject(title: string, description: string, numOfPeople: number) {
+    const newProject = {
+      id: Math.random().toString(),
+      title: title,
+      description: description,
+      people: numOfPeople,
+    };
+    this.projects.push(newProject);
+    for (const listenerFn of this.listeners) {
+      listenerFn(this.projects.slice());
+    }
+  }
+}
+
+const projectState = ProjectState.getInstance(); //created a global instance so we can use its methods in other classes
+
 //VALIDATION
 
 interface ValitableObject {
@@ -19,25 +58,25 @@ function validate(ValitableInput: ValitableObject) {
     ValitableInput.minLength != null &&
     typeof ValitableInput.value === "string"
   ) {
-    isValid = isValid && ValitableInput.value.length > ValitableInput.minLength;
+    isValid = isValid && ValitableInput.value.length >= ValitableInput.minLength;
   }
   if (
     ValitableInput.maxLength != null &&
     typeof ValitableInput.value === "string"
   ) {
-    isValid = isValid && ValitableInput.value.length < ValitableInput.maxLength;
+    isValid = isValid && ValitableInput.value.length <= ValitableInput.maxLength;
   }
   if (
     ValitableInput.minNumber != null &&
     typeof ValitableInput.value === "number"
   ) {
-    isValid = isValid && ValitableInput.value > ValitableInput.minNumber;
+    isValid = isValid && ValitableInput.value >= ValitableInput.minNumber;
   }
   if (
     ValitableInput.maxNumber != null &&
     typeof ValitableInput.value === "number"
   ) {
-    isValid = isValid && ValitableInput.value < ValitableInput.maxNumber;
+    isValid = isValid && ValitableInput.value <= ValitableInput.maxNumber;
   }
   return isValid;
 }
@@ -63,12 +102,14 @@ class ProjectList {
   templateElement: HTMLTemplateElement;
   hostElement: HTMLDivElement;
   listElement: HTMLElement;
+  assignedProjects: any[];
 
   constructor(private type: "active" | "finished") {
     this.templateElement = document.getElementById(
       "project-list"
     )! as HTMLTemplateElement;
     this.hostElement = document.getElementById("app")! as HTMLDivElement;
+    this.assignedProjects = [];
 
     const importedNode = document.importNode(
       this.templateElement.content,
@@ -77,8 +118,24 @@ class ProjectList {
     this.listElement = importedNode.firstElementChild as HTMLElement;
     this.listElement.id = `${this.type}-projects`;
 
+    projectState.addListener((projects: any[]) => {
+      this.assignedProjects = projects;
+      this.renderProjects();
+    });
+
     this.attach();
     this.renderContent();
+  }
+
+  private renderProjects() {
+    const listEl = document.getElementById(
+      `${this.type}-projects-list`
+    )! as HTMLUListElement;
+    for (const prjItem of this.assignedProjects) {
+      const listItem = document.createElement("li");
+      listItem.textContent = prjItem.title;
+      listEl?.appendChild(listItem);
+    }
   }
 
   private renderContent() {
@@ -177,8 +234,7 @@ class ProjectInput {
     const userInput = this.gatherUserInput();
     if (Array.isArray(userInput)) {
       const [title, desc, people] = userInput;
-      console.log(title, desc, people);
-      console.log(userInput);
+      projectState?.addProject(title, desc, people);
     }
     this.clearInputs();
   }
