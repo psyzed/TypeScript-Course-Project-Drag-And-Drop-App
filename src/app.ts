@@ -17,15 +17,25 @@ class Project {
 
 //PROJECT STATE MANAGMENT
 
-type Listener = (items: Project[]) => void;
+type Listener<T> = (items: T[]) => void;
 
-class ProjectState {
+class State<T> {
+  protected listeners: Listener<T>[] = [];
+
+  addListener(listenerFn: Listener<T>) {
+    this.listeners.push(listenerFn);
+  }
+}
+
+class ProjectState extends State<Project> {
   //this will be a singleton class so we can make only one instance of it and use it in the whole app, it well manage the apps state and store the apps data
-  private listeners: Listener[] = [];
+
   private projects: Project[] = [];
   private static instance: ProjectState;
 
-  private constructor() {}
+  private constructor() {
+    super();
+  }
 
   static getInstance() {
     //this is a static method, when used it does not create a new instance of the class
@@ -34,10 +44,6 @@ class ProjectState {
     }
     this.instance = new ProjectState();
     return this.instance;
-  }
-
-  addListener(listenerFn: Listener) {
-    this.listeners.push(listenerFn);
   }
 
   addProject(title: string, description: string, numOfPeople: number) {
@@ -118,28 +124,59 @@ function BindThis(_1: any, _2: any, descriptor: PropertyDescriptor) {
   return configuredDescriptor;
 }
 
-//PROJECT LIST CLASS
+//COMPONENT BASE CLASS
 
-class ProjectList {
+abstract class Component<T extends HTMLElement, U extends HTMLElement> {
+  //we use generic types so that we can use specific types for the properties in the place where we inherit them
   templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-  listElement: HTMLElement;
-  assignedProjects: Project[];
+  hostElement: T;
+  element: U;
 
-  constructor(private type: "active" | "finished") {
+  constructor(
+    templateId: string,
+    hostElementId: string,
+    insertAtStart: boolean,
+    newElementId?: string
+  ) {
     this.templateElement = document.getElementById(
-      "project-list"
+      templateId
     )! as HTMLTemplateElement;
-    this.hostElement = document.getElementById("app")! as HTMLDivElement;
-    this.assignedProjects = [];
+    this.hostElement = document.getElementById(hostElementId)! as T;
 
     const importedNode = document.importNode(
       this.templateElement.content,
       true
     );
-    this.listElement = importedNode.firstElementChild as HTMLElement;
-    this.listElement.id = `${this.type}-projects`;
+    this.element = importedNode.firstElementChild as U;
+    if (newElementId) {
+      this.element.id = newElementId;
+    }
+    this.attach(insertAtStart);
+  }
+  private attach(insertAtBeggining: boolean) {
+    this.hostElement.insertAdjacentElement(
+      insertAtBeggining ? "afterbegin" : "beforeend",
+      this.element
+    ); //This method enables us to insert a html element, the first argument tells defines where the content will be insertet, (after the opening tag)
+  }
+  abstract configure(): void;
+  abstract renderContent(): void;
+}
 
+//PROJECT LIST CLASS
+
+class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+  assignedProjects: Project[];
+
+  constructor(private type: "active" | "finished") {
+    super("project-list", "app", false, `${type}-projects`);
+    this.assignedProjects = [];
+
+    this.configure();
+    this.renderContent();
+  }
+
+  configure(): void {
     projectState.addListener((projects: Project[]) => {
       const relevantProjects = projects.filter((prj) => {
         if (this.type === "active") {
@@ -150,9 +187,13 @@ class ProjectList {
       this.assignedProjects = relevantProjects;
       this.renderProjects();
     });
+  }
 
-    this.attach();
-    this.renderContent();
+  renderContent() {
+    const listId = `${this.type}-projects-list`;
+    this.element.querySelector("ul")!.id = listId;
+    this.element.querySelector("h2")!.textContent =
+      this.type.toUpperCase() + " PROJECTS";
   }
 
   private renderProjects() {
@@ -166,55 +207,36 @@ class ProjectList {
       listEl?.appendChild(listItem);
     }
   }
-
-  private renderContent() {
-    const listId = `${this.type}-projects-list`;
-    this.listElement.querySelector("ul")!.id = listId;
-    this.listElement.querySelector("h2")!.textContent =
-      this.type.toUpperCase() + " PROJECTS";
-  }
-
-  private attach() {
-    this.hostElement.insertAdjacentElement("beforeend", this.listElement); //This method enables us to insert a html element, the first argument tells defines where the content will be insertet, (after the opening tag)
-  }
 }
 
 //PROJECT INPUT CLASS
 
-class ProjectInput {
-  templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-  formElement: HTMLFormElement;
+class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
   titleInputElement: HTMLInputElement;
   descriptionInputElement: HTMLInputElement;
   peopleInputElement: HTMLInputElement;
 
   constructor() {
-    this.templateElement = document.getElementById(
-      "project-input"
-    )! as HTMLTemplateElement;
-    this.hostElement = document.getElementById("app")! as HTMLDivElement;
+    super("project-input", "app", true, "user-input");
 
-    const importedNode = document.importNode(
-      //import node is a method that will take the point in the dom in which we want to render some content
-      this.templateElement.content,
-      true //the second argument of import node tells if we want to render all the levels of nesting "Deep Clone"
-    );
-    this.formElement = importedNode.firstElementChild as HTMLFormElement;
-    this.formElement.id = "user-input"; //adding id to the element for styiling
-    this.titleInputElement = this.formElement.querySelector(
+    this.titleInputElement = this.element.querySelector(
       "#title"
     ) as HTMLInputElement;
-    this.descriptionInputElement = this.formElement.querySelector(
+    this.descriptionInputElement = this.element.querySelector(
       "#description"
     ) as HTMLInputElement;
-    this.peopleInputElement = this.formElement.querySelector(
+    this.peopleInputElement = this.element.querySelector(
       "#people"
     ) as HTMLInputElement;
 
     this.configure();
-    this.attach();
+    this.renderContent();
   }
+
+  configure() {
+    this.element.addEventListener("submit", this.submitHandler.bind(this)); //we use the bind method to bind the this keyword to the class inside the submithandler method
+  }
+  renderContent(): void {}
 
   private gatherUserInput(): [string, string, number] | void {
     const enteredTitle = this.titleInputElement.value;
@@ -266,14 +288,6 @@ class ProjectInput {
       projectState?.addProject(title, desc, people);
     }
     this.clearInputs();
-  }
-
-  private configure() {
-    this.formElement.addEventListener("submit", this.submitHandler.bind(this)); //we use the bind method to bind the this keyword to the class inside the submithandler method
-  }
-
-  private attach() {
-    this.hostElement.insertAdjacentElement("afterbegin", this.formElement); //This method enables us to insert a html element, the first argument tells defines where the content will be insertet, (after the opening tag)
   }
 }
 
