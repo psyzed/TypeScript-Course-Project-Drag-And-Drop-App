@@ -68,6 +68,18 @@ class ProjectState extends State<Project> {
       ProjectStatus.Active
     );
     this.projects.push(newProject);
+    this.updateListeners();
+  }
+
+  moveProject(projectId: string, newStatus: ProjectStatus) {
+    const project = this.projects.find((prj) => prj.id === projectId);
+    if (project && project.status !== newStatus) {
+      project.status = newStatus;
+      this.updateListeners();
+    }
+  }
+
+  private updateListeners() {
     for (const listenerFn of this.listeners) {
       listenerFn(this.projects.slice());
     }
@@ -202,7 +214,8 @@ class ProjectItem
 
   @BindThis
   dragStartHandler(event: DragEvent): void {
-    console.log(event);
+    event.dataTransfer!.setData("text/plain", this.project.id); //The data transfer property exists on drag events, it takes 2 arguments, the 1 argument is an identifier of the format of the data being transfered
+    event.dataTransfer!.effectAllowed = "move"; //The effectAlowed method enables us to configure what will happen to the moved element, e.g. we move it or we copy it
   }
 
   dragEndHandler(_: DragEvent): void {
@@ -238,12 +251,22 @@ class ProjectList
   }
 
   @BindThis
-  dragOverHandler(_: DragEvent): void {
-    const ulListEl = this.element.querySelector("ul")!;
-    ulListEl.classList.add("droppable");
+  dragOverHandler(event: DragEvent): void {
+    if (event.dataTransfer && event.dataTransfer.types[0] === "text/plain") {
+      event.preventDefault(); //we are preventing default cause JS doesn't allow drag and drop by default
+      const ulListEl = this.element.querySelector("ul")!;
+      ulListEl.classList.add("droppable");
+    }
   }
 
-  dropHandler(_: DragEvent): void {}
+  @BindThis
+  dropHandler(event: DragEvent): void {
+    const prjId = event.dataTransfer!.getData("text/plain");
+    projectState.moveProject(
+      prjId,
+      this.type === "active" ? ProjectStatus.Active : ProjectStatus.Finished
+    );
+  }
 
   @BindThis
   dragLeaveHandler(_: DragEvent): void {
