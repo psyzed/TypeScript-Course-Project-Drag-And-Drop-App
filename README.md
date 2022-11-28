@@ -6,4 +6,6 @@ Run npm install to install all dependencies
 Run npm start to start the local server
 If your browser doesn't start automatically start it and visit http://localhost:3000/
 
+(will be refactored in the future)
+
 Thank you!
