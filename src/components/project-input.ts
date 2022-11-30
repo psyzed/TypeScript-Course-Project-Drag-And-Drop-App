@@ -1,7 +1,7 @@
-import { projectState } from '../state/project-state.js'
-import { BindThis } from '../decorators/autobind-this-decorator.js'
-import { Component } from './base-components.js'
-import * as Validation from '../util/validation.js'
+import { projectState } from '../state/project-state'
+import { BindThis } from '../decorators/autobind-this-decorator'
+import { Component } from './base-components'
+import * as Validation from '../util/validation'
 
   //PROJECT INPUT CLASS
 

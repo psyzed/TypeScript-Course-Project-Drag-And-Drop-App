@@ -1,7 +1,7 @@
-import { BindThis } from '../decorators/autobind-this-decorator.js'
-import { Component } from './base-components.js';
-import { Project } from '../models/project-model.js';
-import { Draggable } from '../models/drag-drop-interfaces.js';
+import { BindThis } from '../decorators/autobind-this-decorator'
+import { Component } from './base-components';
+import { Project } from '../models/project-model';
+import { Draggable } from '../models/drag-drop-interfaces';
 
 //PROJECT ITEM CLASS
   export class ProjectItem
